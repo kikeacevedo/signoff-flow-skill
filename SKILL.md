@@ -128,14 +128,31 @@ acli jira auth status
 
 **If NOT authenticated:**
 
-Tell the user: "I need to connect to your Jira account. This will open a browser window."
+⚠️ **This step requires manual user action** because the command needs interaction after browser auth.
 
-Then EXECUTE:
-```bash
-acli jira auth login --web
+Tell the user:
+
+```
+I need you to connect to your Jira account. This is a one-time setup.
+
+Please run this command in your terminal:
+
+    acli jira auth login --web
+
+This will:
+1. Open your browser for Atlassian login
+2. After you authorize, come back to the terminal
+3. Press ENTER to complete the authentication
+
+Let me know when you're done!
 ```
 
-This is interactive and requires user action in the browser.
+**DO NOT execute this command directly** - it will hang waiting for user input.
+
+Wait for user to confirm they completed authentication, then verify:
+```bash
+acli jira auth status
+```
 
 ### Step 7: Check Project
 
@@ -152,10 +169,10 @@ If not found, help user find or clone a project.
 | gh CLI | `which gh` | `brew install gh` |
 | Atlassian CLI | `which acli` | `brew tap atlassian/homebrew-acli && brew install acli` |
 
-| Auth | Check Command | Auth Command (EXECUTE) |
-|------|---------------|------------------------|
-| GitHub | `gh auth status` | `gh auth login --web` |
-| Jira | `acli jira auth status` | `acli jira auth login --web` |
+| Auth | Check Command | Auth Command | Notes |
+|------|---------------|--------------|-------|
+| GitHub | `gh auth status` | `gh auth login --web` | EXECUTE - works automatically |
+| Jira | `acli jira auth status` | `acli jira auth login --web` | ⚠️ USER MUST RUN MANUALLY - requires Enter after browser auth |
 
 ## Important Instructions for Claude
 
