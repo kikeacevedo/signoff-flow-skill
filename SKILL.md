@@ -13,6 +13,21 @@ Guide initiatives through a structured approval process using GitHub PRs as gate
 
 This skill is designed for non-technical users who should not need to copy/paste commands.
 
+## CRITICAL: Confirmation Required for External Actions
+
+**ALWAYS ask for user confirmation BEFORE executing these actions:**
+
+| Action | Requires Confirmation | Example Confirmation Message |
+|--------|----------------------|------------------------------|
+| Commit & Push | ✅ YES | "I'm about to commit and push these changes to GitHub. Proceed?" |
+| Create Pull Request | ✅ YES | "I'm about to create a PR titled '[BMAD][FEAT-123] PRD' with reviewers @user1, @user2. Proceed?" |
+| Create Jira Tickets | ✅ YES | "I'm about to create 3 Jira tickets in project PROJ: [list tickets]. Proceed?" |
+| Install tools | ❌ NO | Execute automatically |
+| Clone repo | ❌ NO | Execute automatically |
+| Create local files | ❌ NO | Execute automatically |
+
+**Wait for explicit user confirmation (e.g., "yes", "proceed", "go ahead") before executing confirmed actions.**
+
 ## Pre-flight Check (ALWAYS RUN FIRST)
 
 When user wants to use signoff flow, execute these checks and auto-install as needed:
@@ -149,6 +164,7 @@ If not found, help user find or clone a project.
 3. **Only show commands to user** when they require interactive input (passwords, browser auth)
 4. **Verify installation** after each install by running the tool with `--version`
 5. **Be patient** - installations can take 1-2 minutes
+6. **ALWAYS ASK FOR CONFIRMATION** before commit/push, creating PRs, or creating Jira tickets
 
 ## Workflow Steps (After Prerequisites Met)
 
@@ -231,66 +247,138 @@ _bmad-output/initiatives/<key>/
 └── artifacts/
 ```
 
-### Advancing Through Stages
+### Advancing Through Stages (WITH CONFIRMATIONS)
 
 For each stage (prd → ux → architecture → epics_stories → readiness):
 
-1. Create artifact stub
-2. Create branch: `git checkout -b bmad/<key>/<artifact>`
-3. Commit and push
-4. Create PR: `gh pr create --title "[BMAD][<key>] <Artifact>" --body "..."`
-5. Request reviewers: `gh pr edit --add-reviewer <leads>`
-6. Create Jira tickets:
-   ```bash
-   acli jira workitem create --project "KEY" --type "Task" --summary "[BMAD][<key>][<artifact>] Signoff - GROUP"
-   ```
+#### Step 1: Create artifact stub (NO confirmation needed)
+Create the artifact file locally.
 
-## Example Conversation (Correct Behavior)
+#### Step 2: Create branch (NO confirmation needed)
+```bash
+git checkout -b bmad/<key>/<artifact>
+```
+
+#### Step 3: Commit and Push (⚠️ CONFIRMATION REQUIRED)
+
+**BEFORE executing, show the user:**
+```
+I'm about to commit and push these changes to GitHub:
+
+📁 Files to commit:
+- _bmad-output/initiatives/<key>/artifacts/<ARTIFACT>.md
+- _bmad-output/initiatives/<key>/state.yaml
+
+📝 Commit message: "[BMAD][<key>] Add <artifact> artifact"
+
+🔄 This will push to branch: bmad/<key>/<artifact>
+
+Do you want me to proceed? (yes/no)
+```
+
+**Wait for user confirmation before executing:**
+```bash
+git add .
+git commit -m "[BMAD][<key>] Add <artifact> artifact"
+git push -u origin bmad/<key>/<artifact>
+```
+
+#### Step 4: Create Pull Request (⚠️ CONFIRMATION REQUIRED)
+
+**BEFORE executing, show the user:**
+```
+I'm about to create a Pull Request on GitHub:
+
+📋 Title: [BMAD][<key>] <Artifact>
+📝 Description: BMAD signoff request for <artifact> phase
+👥 Reviewers: @user1, @user2, @user3 (from governance config)
+🔀 Branch: bmad/<key>/<artifact> → main
+
+Do you want me to proceed? (yes/no)
+```
+
+**Wait for user confirmation before executing:**
+```bash
+gh pr create --title "[BMAD][<key>] <Artifact>" --body "BMAD signoff request..." 
+gh pr edit --add-reviewer user1,user2,user3
+```
+
+#### Step 5: Create Jira Tickets (⚠️ CONFIRMATION REQUIRED)
+
+**BEFORE executing, show the user:**
+```
+I'm about to create Jira tickets for signoff:
+
+🎫 Project: <JIRA_PROJECT_KEY>
+📝 Tickets to create:
+  1. "[BMAD][<key>][<artifact>] Signoff required — BA"
+  2. "[BMAD][<key>][<artifact>] Signoff required — DESIGN"  
+  3. "[BMAD][<key>][<artifact>] Signoff required — DEV"
+
+Do you want me to proceed? (yes/no)
+```
+
+**Wait for user confirmation before executing:**
+```bash
+acli jira workitem create --project "KEY" --type "Task" --summary "[BMAD][<key>][<artifact>] Signoff - BA"
+acli jira workitem create --project "KEY" --type "Task" --summary "[BMAD][<key>][<artifact>] Signoff - DESIGN"
+acli jira workitem create --project "KEY" --type "Task" --summary "[BMAD][<key>][<artifact>] Signoff - DEV"
+```
+
+## Example Conversation (Correct Behavior with Confirmations)
 
 ```
-User: I want to start a signoff flow
+User: I want to advance the PRD for initiative FEAT-100
 
-Agent: Let me check your setup and install any missing tools...
+Agent: I've created the PRD artifact locally. Now I need to push it to GitHub.
 
-       [EXECUTES: which gh]
+       I'm about to commit and push these changes:
        
-       GitHub CLI is not installed. Installing now...
+       📁 Files: _bmad-output/initiatives/FEAT-100/artifacts/PRD.md
+       📝 Commit: "[BMAD][FEAT-100] Add PRD artifact"
+       🔀 Branch: bmad/FEAT-100/prd
        
-       [EXECUTES: brew install gh]
+       Do you want me to proceed?
+
+User: yes
+
+Agent: ✅ Changes committed and pushed.
        
-       ✅ GitHub CLI installed successfully.
+       Now I'll create a Pull Request.
        
-       [EXECUTES: gh auth status]
+       📋 Title: [BMAD][FEAT-100] PRD
+       👥 Reviewers: @alice (BA), @bob (Design), @charlie (Dev)
        
-       You're not logged into GitHub. I'll open a browser for you to authenticate.
+       Do you want me to proceed?
+
+User: yes
+
+Agent: ✅ PR #42 created: https://github.com/org/repo/pull/42
        
-       [EXECUTES: gh auth login --web]
+       Finally, I'll create Jira tickets for tracking.
        
-       Please complete the authentication in your browser...
+       🎫 Tickets to create in PROJECT:
+         1. "[BMAD][FEAT-100][prd] Signoff required — BA"
+         2. "[BMAD][FEAT-100][prd] Signoff required — DESIGN"
+         3. "[BMAD][FEAT-100][prd] Signoff required — DEV"
        
-       ✅ Authenticated to GitHub as @username
+       Do you want me to proceed?
+
+User: yes
+
+Agent: ✅ Created tickets: PROJECT-101, PROJECT-102, PROJECT-103
        
-       [EXECUTES: which acli]
-       
-       Atlassian CLI not installed. Installing now...
-       
-       [EXECUTES: brew tap atlassian/homebrew-acli && brew install acli]
-       
-       ✅ Atlassian CLI installed successfully.
-       
-       All tools ready! Which project do you want to work on?
+       All done! The PRD is now pending signoff.
 ```
 
 ## WRONG Behavior (Do NOT do this)
 
 ```
-User: I want to start a signoff flow
+User: I want to advance the PRD
 
-Agent: GitHub CLI is not installed. To install it, run:
+Agent: [Creates files, commits, pushes, creates PR, creates tickets all at once]
        
-       brew install gh
-       
-       Let me know when you've done that.
+       ✅ Done! Created PR and 3 Jira tickets.
 ```
 
-**THIS IS WRONG.** The agent should EXECUTE the command, not tell the user to run it.
+**THIS IS WRONG.** The agent should ask for confirmation before each external action.
